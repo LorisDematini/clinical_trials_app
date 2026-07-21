@@ -1,19 +1,72 @@
-# ClinicalTrials JSON Exporter
+# ClinicalTrials & PubMed Exporter
 
-Based on the [SBIM](https://www.sbim-stlouis.org/) need of automating the extraction of Clinical Trials items, the first step is to retrieve the data associated to each clinical trial. A unique NCT id is associated to each clinical trial.
-We provide here a small dockerized Streamlit webapp built with Codex (GPT5.5 high reasonning). The user must upload a CSV or Excel file containing NCT IDs. The app fetches study JSON from ClinicalTrials.gov, and downloads the retrieved studies as one JSON object keyed by NCT ID.
+This Streamlit application was developed to automate the retrieval of information from **ClinicalTrials.gov** and **PubMed**, based on the needs of the [SBIM](https://www.sbim-stlouis.org/).
 
-## Input file
+The application provides two independent modules:
 
-Use a `.csv`, `.xlsx`, or `.xls` file with one NCT ID per row in the first column.
+* **ClinicalTrials Exporter**: retrieves complete study records from ClinicalTrials.gov using NCT identifiers.
+* **PubMed Exporter**: retrieves complete PubMed XML records from bibliography references containing DOI identifiers.
 
-## Run locally with uv
+## ClinicalTrials Exporter
+
+**Input**
+
+* `.csv`, `.xlsx` or `.xls`
+* One **NCT ID** per row in the first column.
+
+The application:
+
+* validates NCT IDs
+* removes duplicates
+* reports invalid IDs
+* downloads the complete study JSON
+* generates a summary CSV containing:
+
+  * NCT ID
+  * Study first submission date
+  * Study type
+  * Primary outcomes
+  * Eligibility criteria
+  * Standard ages
+
+Outputs:
+
+* `clinical_trials.json`
+* `clinical_trials.csv`
+
+---
+
+## PubMed Exporter
+
+**Input**
+
+* `.csv`, `.xlsx` or `.xls`
+* One bibliography reference per row containing a DOI.
+
+The application:
+
+* extracts DOI identifiers
+* validates references
+* removes duplicates
+* retrieves the corresponding PubMed record
+* downloads the complete PubMed XML
+
+Output:
+
+* `pubmed_articles.xml`
+
+---
+
+## Run locally
 
 ```bash
+uv sync
 uv run streamlit run app.py
 ```
 
-Open the URL Streamlit prints, usually `http://localhost:8501`.
+The application is usually available at `http://localhost:8501`.
+
+---
 
 ## Run with Docker
 
@@ -22,8 +75,15 @@ docker build -t clinical-trials-app .
 docker run --rm -p 8501:8501 clinical-trials-app
 ```
 
-Then open `http://localhost:8501`.
+---
 
-## Output
+## Technologies
 
-The download is `clinical_trials_studies.json`, containing a JSON object of successfully retrieved study records. Each key is an NCT ID, and each value is the fetched study JSON. Invalid IDs, duplicate IDs, and failed API calls are shown in the app and excluded from the download.
+* Python
+* Streamlit
+* Pandas
+* Requests
+* ClinicalTrials.gov API v2
+* NCBI Entrez E-utilities
+* Docker
+* uv
