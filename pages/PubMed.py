@@ -41,6 +41,113 @@ file = st.file_uploader(
     type=["csv","xlsx","xls"]
 )
 
+import xml.etree.ElementTree as ET
+
+
+def extract_fields(xml: str):
+
+    root = ET.fromstring(xml)
+
+    article = root.find(".//PubmedArticle")
+    citation = article.find("MedlineCitation")
+    article_data = citation.find("Article")
+
+
+    # PMID
+    pmid = citation.findtext("PMID")
+
+
+    # DOI
+    doi = next(
+        (
+            x.text
+            for x in article.findall(".//ArticleId")
+            if x.attrib.get("IdType") == "doi"
+        ),
+        None
+    )
+
+
+    # Publication date
+    pubdate = article_data.find(".//JournalIssue/PubDate")
+
+    date = "-".join(
+        filter(
+            None,
+            [
+                pubdate.findtext("Year"),
+                pubdate.findtext("Month"),
+                pubdate.findtext("Day"),
+            ],
+        )
+    ) if pubdate is not None else None
+
+
+    # Title
+    title = "".join(article_data.find("ArticleTitle").itertext())
+
+
+    # Abstract
+    methods = []
+    results = []
+
+    for abstract in article.findall(".//AbstractText"):
+
+        label = abstract.attrib.get("Label", "").upper()
+        category = abstract.attrib.get("NlmCategory", "").upper()
+
+        text = "".join(abstract.itertext()).strip()
+
+        if "METHOD" in label or category == "METHODS":
+            methods.append(text)
+
+        elif "RESULT" in label or category == "RESULTS":
+            results.append(text)
+
+        elif "FINDINGS" in label or category == "FINDINGS":
+            results.append(text)
+
+
+    # Affiliations
+    affiliations = " | ".join(
+        a.text.strip()
+        for a in article.findall(".//Affiliation")
+        if a.text
+    )
+
+
+    # Sponsors (Grant + Funding section)
+
+    grant_sponsors = [
+        f"{g.findtext('Agency','')} ({g.findtext('GrantID','')})".strip()
+        for g in article.findall(".//Grant")
+    ]
+
+    funding_sponsors = [
+        "".join(a.itertext()).strip()
+        for a in article.findall(".//AbstractText")
+        if a.attrib.get("Label", "").upper() == "FUNDING"
+        or a.attrib.get("NlmCategory", "").upper() == "FUNDING"
+    ]
+
+    sponsors = " | ".join(
+        x for x in grant_sponsors + funding_sponsors if x
+    )
+
+
+    return {
+        "pmid": pmid,
+        "doi": doi,
+        "date": date,
+        "title": title,
+        "methods": "\n".join(methods),
+        "results": "\n".join(results),
+        "affiliations": affiliations,
+        "sponsors": sponsors,
+    }
+
+
+
 
 if file:
     try:
@@ -65,12 +172,13 @@ if file:
             st.write(dup)
 
     if st.button("Fetch articles", type="primary"):
-        articles, errors = {}, []
+        articles, rows, errors = {}, [], []
         bar = st.progress(0)
         for i, doi in enumerate(valid, 1):
             try:
                 xml = fetch_article_xml(doi)
                 articles[doi] = xml
+                rows.append(extract_fields(xml))
             except ArticleFetchError as e:
                 errors.append({
                     "doi": doi,
@@ -100,4 +208,13 @@ if file:
             BytesIO(xml_content),
             "pubmed_articles.xml",
             "application/xml"
+        )
+
+        st.download_button(
+            "Download CSV",
+            BytesIO(
+                pd.DataFrame(rows).to_csv(index=False).encode("utf-8")
+            ),
+            "pubmed_articles.csv",
+            "text/csv"
         )
