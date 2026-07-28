@@ -45,11 +45,22 @@ Outputs:
 
 The application:
 
-* extracts DOI identifiers
-* validates references
-* removes duplicates
-* retrieves the corresponding PubMed record
-* downloads the complete PubMed XML
+* extracts and validates DOI identifiers
+* removes duplicate references
+* retrieves the corresponding PubMed records
+* downloads the complete PubMed XML file
+* extracts key trial information from the abstract, including:
+  * PMID
+  * DOI
+  * publication date
+  * article title
+  * trial phase
+  * study design
+  * inclusion period (when available)
+  * total number of patients
+  * METHODS and RESULTS sections
+  * funding information
+* exports all extracted information as a CSV file.
 
 Output:
 
