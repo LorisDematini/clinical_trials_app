@@ -130,14 +130,18 @@ def extract_fields(xml):
         else None
     )
 
-
     methods = []
     results = []
+    full_abstract = []
 
+    for abstract in article.findall(".//AbstractText"):
 
-    for abstract in article.findall(
-        ".//AbstractText"
-    ):
+        text = "".join(
+            abstract.itertext()
+        ).strip()
+
+        if text:
+            full_abstract.append(text)
 
         label = abstract.attrib.get(
             "Label",
@@ -149,17 +153,11 @@ def extract_fields(xml):
             ""
         ).upper()
 
-        text = "".join(
-            abstract.itertext()
-        ).strip()
-
-
         if (
             "METHOD" in label
             and "CLASSIFICATION" not in label
         ):
             methods.append(text)
-
 
         elif (
             "RESULT" in label
@@ -168,10 +166,9 @@ def extract_fields(xml):
         ):
             results.append(text)
 
-
-
     methods = "\n".join(methods)
     results = "\n".join(results)
+    full_abstract = "\n".join(full_abstract)
 
     sponsors = []
 
@@ -208,6 +205,8 @@ def extract_fields(xml):
                 )
             )
 
+    regex_methods = methods if methods else full_abstract
+    regex_results = results if results else full_abstract
 
 
     return {
@@ -217,11 +216,12 @@ def extract_fields(xml):
         "title": title,
 
         **extract_trial_features(
-            methods,
-            results
+            regex_methods,
+            regex_results
         ),
 
         "methods": methods,
         "results": results,
+        "abstract": full_abstract,
         "sponsors": " | ".join(sponsors),
     }
