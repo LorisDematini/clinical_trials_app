@@ -54,4 +54,4 @@ def download_file(url: str):
 
     response.raise_for_status()
 
-    return response.content
+    return response.content 

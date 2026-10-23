@@ -44,7 +44,7 @@ def normalize_pm_ids(refs: Iterable[str]):
         doi = match.group()
 
         if doi in seen:
-            duplicates.append(doi)
+            duplicates.append(doi) 
 
         else:
             seen.add(doi)

@@ -23,7 +23,7 @@ TOTAL_PATTERN = re.compile(
         (?:patients?|participants?|subjects?|individuals?)\b
     """,
     re.I | re.X,
-)
+) 
 
 DATE = r"""
 (?:\d{1,2},?\s+)?
